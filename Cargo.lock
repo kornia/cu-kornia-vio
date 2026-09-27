@@ -1621,8 +1621,9 @@ dependencies = [
 
 [[package]]
 name = "kornia-3d"
-version = "0.1.15-rc.5"
-source = "git+https://github.com/kornia/kornia-rs?branch=main#5214f3a437b9f269c0ffc137956a99d58c6ee0c0"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9e75de04f82c685342ee3e3c1cfdd4f86e918751a360b9cfdb02f5218e5d2f6f"
 dependencies = [
  "bincode",
  "faer 0.24.4",
@@ -1640,8 +1641,9 @@ dependencies = [
 
 [[package]]
 name = "kornia-algebra"
-version = "0.1.15-rc.5"
-source = "git+https://github.com/kornia/kornia-rs?branch=main#5214f3a437b9f269c0ffc137956a99d58c6ee0c0"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "38badefbffb6b402e956af3908ea1658438e692502db5d7f01d9798f63e1a3af"
 dependencies = [
  "glam 0.33.7",
  "nalgebra",
@@ -1651,8 +1653,9 @@ dependencies = [
 
 [[package]]
 name = "kornia-bow"
-version = "0.1.15-rc.5"
-source = "git+https://github.com/kornia/kornia-rs?branch=main#5214f3a437b9f269c0ffc137956a99d58c6ee0c0"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f56365c5b88412594d0164be70c4ab639d9e674bdea0756d48c3515394713d2c"
 dependencies = [
  "bincode",
  "rand 0.10.2",
@@ -1664,8 +1667,9 @@ dependencies = [
 
 [[package]]
 name = "kornia-image"
-version = "0.1.15-rc.5"
-source = "git+https://github.com/kornia/kornia-rs?branch=main#5214f3a437b9f269c0ffc137956a99d58c6ee0c0"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7baeb89055e61de6ca0580e9dd04893052ff4da619836f993dd7ec998b4a128b"
 dependencies = [
  "kornia-tensor",
  "num-traits",
@@ -1675,8 +1679,9 @@ dependencies = [
 
 [[package]]
 name = "kornia-imgproc"
-version = "0.1.15-rc.5"
-source = "git+https://github.com/kornia/kornia-rs?branch=main#5214f3a437b9f269c0ffc137956a99d58c6ee0c0"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3eeca083d17c225e16b40dde8153d00e846a655c9d250e8690ce6a9ee22070cb"
 dependencies = [
  "kornia-algebra",
  "kornia-image",
@@ -1690,7 +1695,7 @@ dependencies = [
 [[package]]
 name = "kornia-sensors"
 version = "0.1.0"
-source = "git+https://github.com/kornia/kornia-slam?branch=develop#294b00b14860b79dd0e1c11ba86de9f06f2b0227"
+source = "git+https://github.com/kornia/kornia-slam?branch=develop#7530df389be2153f8358e087b9e01e887ea07503"
 dependencies = [
  "glam 0.33.7",
  "kornia-algebra",
@@ -1699,7 +1704,7 @@ dependencies = [
 [[package]]
 name = "kornia-slam"
 version = "0.1.0"
-source = "git+https://github.com/kornia/kornia-slam?branch=develop#294b00b14860b79dd0e1c11ba86de9f06f2b0227"
+source = "git+https://github.com/kornia/kornia-slam?branch=develop#7530df389be2153f8358e087b9e01e887ea07503"
 dependencies = [
  "faer 0.22.6",
  "kornia-3d",
@@ -1713,8 +1718,9 @@ dependencies = [
 
 [[package]]
 name = "kornia-tensor"
-version = "0.1.15-rc.5"
-source = "git+https://github.com/kornia/kornia-rs?branch=main#5214f3a437b9f269c0ffc137956a99d58c6ee0c0"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2e7dc445092435019b0fe1599c95ab4c23aa17f1a8a092403c08765cf059d06a"
 dependencies = [
  "num-traits",
  "rayon",
