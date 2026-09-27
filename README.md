@@ -44,8 +44,8 @@ knows: the tracker is built on the first frame, and every later frame must match
 
 ## Using it
 
-Neither crate is on crates.io yet (kornia-slam is consumed from git), so depend on the repo. Name
-both crates with the identical spec string; see [the spec-string rule](#the-spec-string-rule).
+Neither crate is on crates.io yet (kornia-slam is still consumed from git), so depend on the repo.
+Name both crates with the identical spec string; see [the spec-string rule](#the-spec-string-rule).
 
 ```toml
 [dependencies]
@@ -174,9 +174,13 @@ It applies in three directions:
 - **copper**: every copper-rs crate (`cu29`, `cu-sensor-payloads`, `cu-spatial-payloads`) is
   pinned by the same `rev =`. A consumer must spell that identical rev, or it gets a second
   `CuMsg` and a second `CuImage`.
-- **kornia**: every consumer must spell `branch = "main"` identically for the four kornia-rs
-  crates, and `branch = "develop"` for `kornia-slam` AND `kornia-sensors` (the latter is a
-  workspace member of the kornia-slam repo, not of kornia-rs).
+- **kornia**: the kornia-rs crates (`kornia-image`, `kornia-3d`, `kornia-algebra`,
+  `kornia-imgproc`, and any other a consumer names) come from **crates.io at `"0.2.0"`**, the
+  exact requirement kornia-slam's `develop` uses. A git spelling of kornia-rs is a different
+  source even at identical code (v0.1.15 at `c9f9fd7` is the same code as 0.2.0), and splits
+  `Image` in two. `kornia-slam` AND `kornia-sensors` (the latter is a workspace member of the
+  kornia-slam repo, not of kornia-rs) stay on git `branch = "develop"` until kornia-slam
+  publishes; they then move to crates.io `"0.1.0"`, and every consumer must move with them.
 - **this repo's own two crates**: a consumer naming both `cu-kornia-vio` and `cu-stereo-payloads`
   must give them the identical URL and the identical `branch = "main"`. `cu-kornia-vio` reaches the
   payload crate by path, so it inherits the git source it was itself pulled from; pinning the
@@ -187,9 +191,10 @@ It applies in three directions:
   `https://github.com/kornia/cu-kornia-vio` everywhere.
 
 `Cargo.lock` is tracked so that a clean clone builds: it holds a kornia-rs / kornia-slam pair
-known to compile together (kornia-rs v0.1.15 at `c9f9fd7`, kornia-slam develop at `c94e2a8`). A
-consumer's own lock still wins, but a kornia-slam from before its map-API rework (which
-`c94e2a8` includes) does not compile against this crate.
+known to compile together (kornia-rs 0.2.0 from crates.io, kornia-slam develop at `7530df3`). A
+consumer's own lock still wins, but a kornia-slam from before its move to crates.io kornia-rs
+(`6820744`) names git kornia-rs and splits the graph, and one from before its map-API rework
+does not compile against this crate.
 
 ## Known limitations
 

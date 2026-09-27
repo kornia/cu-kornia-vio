@@ -10,8 +10,9 @@ members = ["crates/cu-stereo-payloads"]
 # crate below uses the IDENTICAL git + rev spec for the same reason.
 [workspace.dependencies]
 cu29 = { git = "https://github.com/copper-project/copper-rs", rev = "fe2061dc10539868334f6ded55a9e75feb0f2b62" }
-# Without its `kornia` feature: that pulls kornia-image from crates.io, a second `Image` type next
-# to the git one kornia-slam uses. The eye-to-`Image` conversion is ours instead.
+# Without its `kornia` feature: that pulls kornia-image 0.1.10 from crates.io, a second `Image`
+# type next to the 0.2.0 one kornia-slam uses (semver-incompatible, so cargo cannot unify them).
+# The eye-to-`Image` conversion is ours instead.
 cu-sensor-payloads = { git = "https://github.com/copper-project/copper-rs", rev = "fe2061dc10539868334f6ded55a9e75feb0f2b62" }
 cu-spatial-payloads = { git = "https://github.com/copper-project/copper-rs", rev = "fe2061dc10539868334f6ded55a9e75feb0f2b62" }
 cu29-build = { git = "https://github.com/copper-project/copper-rs", rev = "fe2061dc10539868334f6ded55a9e75feb0f2b62" }
@@ -55,11 +56,15 @@ cu-spatial-payloads = { workspace = true }
 # types, with an error naming the same path twice.
 cu-stereo-payloads = { path = "crates/cu-stereo-payloads" }
 
-# kornia: there is NO [patch] table. Cargo keys a git source on the exact spec string, so every
-# consumer of this crate must spell each spec identically (`branch = "develop"` for the two
-# kornia-slam repo crates, `branch = "main"` for the four kornia-rs ones) or the graph splits into
-# two `Image<u8,1>` types and two `TrackingStatus` types, which is the single most expensive
-# mistake available here.
+# kornia: there is NO [patch] table. Cargo keys a source on the exact spec string (git URL + ref,
+# or registry), so every consumer of this crate must spell each spec identically or the graph
+# splits into two `Image<u8,1>` types and two `TrackingStatus` types, which is the single most
+# expensive mistake available here:
+# - the kornia-rs crates come from crates.io at `version = "0.2.0"`, the exact requirement
+#   kornia-slam's `develop` uses. A git spelling of kornia-rs (even at the same code, v0.1.15 =
+#   `c9f9fd7`) is a DIFFERENT source and a second `Image` type;
+# - the two kornia-slam repo crates stay on git `branch = "develop"` because kornia-slam is not
+#   on crates.io yet. When it publishes they move to crates.io `version = "0.1.0"`.
 kornia-slam = { git = "https://github.com/kornia/kornia-slam", branch = "develop" }
 # The IMU types (`ImuMeasurement`, `ImuBias`, `ImuCalib`, `PreintegratedImu`) are NOT re-exported
 # by kornia-slam — `ImuFactor::{preintegrated, raw_samples}` (inserted via `Map::apply_insertion`)
@@ -69,10 +74,10 @@ kornia-slam = { git = "https://github.com/kornia/kornia-slam", branch = "develop
 # different cargo source, which would make `ImuBias` here a DIFFERENT type from the `ImuBias` in
 # `ImuFactor`, with a type error that names the same path twice.
 kornia-sensors = { git = "https://github.com/kornia/kornia-slam", branch = "develop" }
-kornia-image = { git = "https://github.com/kornia/kornia-rs", branch = "main" }
-kornia-3d = { git = "https://github.com/kornia/kornia-rs", branch = "main" }
-kornia-algebra = { git = "https://github.com/kornia/kornia-rs", branch = "main" }
-kornia-imgproc = { git = "https://github.com/kornia/kornia-rs", branch = "main" }
+kornia-image = "0.2.0"
+kornia-3d = "0.2.0"
+kornia-algebra = "0.2.0"
+kornia-imgproc = "0.2.0"
 
 thiserror = { workspace = true }
 # Only for the inertial RON block: the camera-to-IMU extrinsic is 12 numbers and cu29's

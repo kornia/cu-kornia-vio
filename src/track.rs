@@ -416,8 +416,8 @@ pub enum SystemMode {
 /// Mutable tracker state carried across frames.
 ///
 /// Owned here since kornia-slam made its own `SystemState` crate-private. The fields and
-/// [`SystemState::reset`] are kornia-slam's (develop `c94e2a8`, `system/state.rs`), minus the
-/// monocular `bootstrap_frame`, which a single-frame stereo bootstrap never holds.
+/// [`SystemState::reset`] are kornia-slam's (develop `7530df3`, `system/state.rs`, unchanged since
+/// `c94e2a8`), minus the monocular `bootstrap_frame`, which a single-frame stereo bootstrap never holds.
 #[derive(Debug, Clone)]
 struct SystemState {
     pose_world_to_cam: Pose3d,
