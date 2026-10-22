@@ -101,6 +101,9 @@ impl Durations {
 /// Where a frame's solve goes, per stage, from the timers the tracker already runs. The stereo
 /// frontend (ORB, pyramids, stereo) is fixed cost per frame; `estimate` (projection matching +
 /// PnP) scales with the local map; `keyframe` runs only on insertion.
+///
+/// `#[non_exhaustive]`: a new stage is an added field, not a breaking change.
+#[non_exhaustive]
 pub struct StageTiming {
     /// ORB on both eyes.
     pub orb: Durations,
@@ -138,7 +141,7 @@ impl Default for StageTiming {
 
 impl StageTiming {
     /// Every stage with its name, in pipeline order.
-    pub fn stages(&self) -> [(&'static str, &Durations); 8] {
+    pub fn stages(&self) -> impl Iterator<Item = (&'static str, &Durations)> {
         [
             ("orb", &self.orb),
             ("pyramid", &self.pyramid),
@@ -149,6 +152,7 @@ impl StageTiming {
             ("keyframe", &self.keyframe),
             ("local_ba", &self.local_ba),
         ]
+        .into_iter()
     }
 }
 
