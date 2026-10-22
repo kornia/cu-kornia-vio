@@ -5002,6 +5002,7 @@ impl Tracker {
             } else {
                 &[]
             };
+            let t_ba = std::time::Instant::now();
             let snapshot = self.map.ba_snapshot(&local_window_with_neighbors(
                 &self.map,
                 stationary.iter().map(|f| (f.from_idx, f.to_idx)),
@@ -5034,6 +5035,9 @@ impl Tracker {
                 }
                 None => run_local_ba(snapshot, &self.camera),
             };
+            self.stage_timing
+                .local_ba
+                .push_ms(t_ba.elapsed().as_secs_f64() * 1e3);
             // What the inertial solve did (`run_local_ba` reports nothing). Read here, before
             // the update is consumed, and logged whatever becomes of it below: a refused solve
             // is the one whose figures matter most.

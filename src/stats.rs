@@ -23,7 +23,7 @@ use std::time::Duration;
 /// Cap on retained samples: ~3 hours at 10 Hz, 800 kB.
 const MAX_SAMPLES: usize = 100_000;
 
-/// Cap per [`StageTiming`] stage: ~35 min at 10 Hz, 160 kB each, seven stages.
+/// Cap per [`StageTiming`] stage: ~35 min at 10 Hz, 160 kB each, eight stages.
 const STAGE_SAMPLES: usize = 20_000;
 
 /// A stream of durations, kept in full so percentiles are exact — up to [`MAX_SAMPLES`].
@@ -116,6 +116,8 @@ pub struct StageTiming {
     pub bookkeep: Durations,
     /// Keyframe insertion (grow, fuse, local BA, cull), inserting frames only.
     pub keyframe: Durations,
+    /// Local BA inside insertion: the window snapshot and the solve, keyframes that ran it.
+    pub local_ba: Durations,
 }
 
 impl Default for StageTiming {
@@ -129,13 +131,14 @@ impl Default for StageTiming {
             estimate: d(),
             bookkeep: d(),
             keyframe: d(),
+            local_ba: d(),
         }
     }
 }
 
 impl StageTiming {
     /// Every stage with its name, in pipeline order.
-    pub fn stages(&self) -> [(&'static str, &Durations); 7] {
+    pub fn stages(&self) -> [(&'static str, &Durations); 8] {
         [
             ("orb", &self.orb),
             ("pyramid", &self.pyramid),
@@ -144,6 +147,7 @@ impl StageTiming {
             ("estimate", &self.estimate),
             ("bookkeep", &self.bookkeep),
             ("keyframe", &self.keyframe),
+            ("local_ba", &self.local_ba),
         ]
     }
 }
