@@ -5035,9 +5035,7 @@ impl Tracker {
                 }
                 None => run_local_ba(snapshot, &self.camera),
             };
-            self.stage_timing
-                .local_ba
-                .push_ms(t_ba.elapsed().as_secs_f64() * 1e3);
+            self.stage_timing.local_ba.push(t_ba.elapsed());
             // What the inertial solve did (`run_local_ba` reports nothing). Read here, before
             // the update is consumed, and logged whatever becomes of it below: a refused solve
             // is the one whose figures matter most.

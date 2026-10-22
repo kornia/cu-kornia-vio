@@ -49,8 +49,9 @@ impl Default for Durations {
 }
 
 impl Durations {
-    /// A ring of `cap` samples, reserved up front.
+    /// A ring of `cap` samples (at least one), reserved up front.
     pub fn with_capacity(cap: usize) -> Self {
+        let cap = cap.max(1);
         Self {
             ms: std::collections::VecDeque::with_capacity(cap),
             cap,

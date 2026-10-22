@@ -901,7 +901,7 @@ impl CuTask for StereoVio {
             t.keyframe_frames(),
             t.total_frames()
         );
-        if let Some(st) = self.tracker.as_ref().map(|t| t.stage_timing()) {
+        if let Some(st) = self.stage_timing() {
             for (stage, d) in st.stages() {
                 info!(
                     "vio stage {}: n={} p50_ms={} p99_ms={} max_ms={}",
