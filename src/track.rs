@@ -94,7 +94,7 @@ use kornia_slam::mapping::bundle_adjustment::{
     local_window_with_neighbors, run_local_ba, run_local_inertial_ba,
 };
 use kornia_slam::mapping::culling::{
-    KeyframeCullingConfig, cull_landmarks, cull_redundant_keyframes,
+    KeyframeCullingConfig, cull_landmarks, cull_redundant_keyframes, evict_oldest_keyframes,
 };
 use kornia_slam::mapping::growth::accepted_pair_claims;
 use kornia_slam::mapping::map::{
@@ -294,6 +294,11 @@ pub struct TrackerConfig {
     /// `reset_map_on_loss` bounds this ONLY when tracking fails; tracking cleanly in good light
     /// never trips it, so the better the conditions the sooner VIO dies.
     pub max_keyframes: Option<usize>,
+    /// At [`Self::max_keyframes`], once culling (if on) cannot make room, evict the oldest
+    /// keyframes instead of dropping the map; see [`Tracker::evict_for_room`]. `false` — what
+    /// [`TrackerConfig::new`] sets — drops the map, as it always did. Evicted keyframes'
+    /// landmarks keep their slots, so the map still drops at [`Tracker::landmark_slot_cap`].
+    pub evict_oldest_at_bound: bool,
     /// Neighbour window for grow/fuse; see [`DEFAULT_MAX_COVISIBLE_KEYFRAMES`].
     pub max_covisible_keyframes: usize,
     /// Inertial front end. `None` — what [`TrackerConfig::new`] sets — is not a degraded mode
@@ -393,6 +398,7 @@ impl TrackerConfig {
             relocalization: Some(RelocConfig::default()),
             reset_map_on_loss: false,
             max_keyframes: None,
+            evict_oldest_at_bound: false,
             max_covisible_keyframes: DEFAULT_MAX_COVISIBLE_KEYFRAMES,
             inertial: None,
             wheel_odom: None,
@@ -1219,6 +1225,9 @@ pub struct Tracker {
     /// Keyframes removed by [`TrackerConfig::keyframe_culling`], lifetime. A cull is not a drop:
     /// the world, its generation and every other keyframe stay as they were.
     culled_keyframes: u64,
+    /// Oldest keyframes evicted at the map bound ([`TrackerConfig::evict_oldest_at_bound`]),
+    /// lifetime. Not a drop either.
+    evicted_keyframes: u64,
     /// Maps discarded by ANY reset (requested, loss, size bound, refused biases), lifetime: each
     /// one means the next bootstrap starts a new map. Not `world_generation`, which also moves on
     /// an inertial alignment and a kept-map re-bootstrap, neither of which starts a map.
@@ -1788,6 +1797,7 @@ impl Tracker {
             frame_report: FrameReport::default(),
             map_drops: 0,
             culled_keyframes: 0,
+            evicted_keyframes: 0,
             map_generation: 0,
             anchored_since_reset: false,
             last_motion: MotionCheck::default(),
@@ -2077,7 +2087,7 @@ impl Tracker {
         let key = (
             self.map.keyframes().len(),
             self.world_generation,
-            self.culled_keyframes,
+            self.culled_keyframes + self.evicted_keyframes,
         );
         if key != self.live_map_points_key {
             self.live_map_points = self.map.num_active_map_points();
@@ -2332,7 +2342,8 @@ impl Tracker {
     ///
     /// With [`TrackerConfig::keyframe_culling`] on, redundant keyframes are culled first and the
     /// map is dropped only if that did not bring it back under the bound, or once its landmark
-    /// slots reach [`Self::landmark_slot_cap`]: culling never shrinks those.
+    /// slots reach [`Self::landmark_slot_cap`]: culling never shrinks those. With
+    /// [`TrackerConfig::evict_oldest_at_bound`] the oldest keyframes are evicted before that.
     fn arm_map_bound(&mut self, inserted: bool) {
         let Some(cap) = self.config.max_keyframes else {
             return;
@@ -2349,6 +2360,9 @@ impl Tracker {
         }
         if self.map.keyframes().len() >= cap {
             self.cull_for_room();
+            if self.map.keyframes().len() >= cap && self.config.evict_oldest_at_bound {
+                self.evict_for_room(cap);
+            }
             if self.map.keyframes().len() >= cap {
                 self.pending_map_reset = true;
             }
@@ -2357,7 +2371,8 @@ impl Tracker {
 
     /// The landmark slots a culled map may reach before it is dropped anyway: `max_keyframes`
     /// times `orb.n_keypoints`, the most a map could hold at the keyframe bound without culling
-    /// (a keyframe creates at most a landmark per feature). `None` unless culling is on.
+    /// (a keyframe creates at most a landmark per feature). `None` unless culling or eviction
+    /// is on.
     ///
     /// kornia-slam never compacts `map_points`: a retired landmark keeps its slot, and the
     /// per-keyframe passes (landmark culling, the live count, each keyframe removal) walk every
@@ -2365,7 +2380,9 @@ impl Tracker {
     /// the slots, the memory and the insertion cost would grow with the map's lifetime, the
     /// stall `max_keyframes` exists to prevent.
     fn landmark_slot_cap(&self) -> Option<usize> {
-        self.config.keyframe_culling.as_ref()?;
+        if self.config.keyframe_culling.is_none() && !self.config.evict_oldest_at_bound {
+            return None;
+        }
         let cap = self.config.max_keyframes?;
         Some(cap.saturating_mul(self.config.orb.n_keypoints))
     }
@@ -2598,23 +2615,8 @@ impl Tracker {
             );
             return 0;
         }
-        let keep: HashSet<usize> = self
-            .wheel
-            .as_ref()
-            .into_iter()
-            .flat_map(|w| w.pending_keyframes())
-            .chain(self.state.current_keyframe_idx)
-            // Also the keyframe a suspended fusion waits on: the suspension is read only while it
-            // names the last keyframe, and is never cleared, so keeping it once a newer keyframe
-            // exists would pin it and everything newer for the life of the map.
-            .chain(self.state.last_keyframe_idx)
-            .collect();
-        let keyframes = self.map.keyframes();
-        let oldest_kept = keyframes
-            .iter()
-            .position(|kf| keep.contains(&kf.frame.idx))
-            .unwrap_or(keyframes.len());
-        let before = keyframes.len();
+        let oldest_kept = self.oldest_kept_slot();
+        let before = self.map.keyframes().len();
         let cfg = {
             let mut c = cfg.clone();
             c.protect_newest = cfg.protect_newest.max(before - oldest_kept);
@@ -2662,6 +2664,97 @@ impl Tracker {
             self.culled_keyframes
         );
         removed.len()
+    }
+
+    /// Slot of the oldest keyframe a removal must keep, the map's length if none: one the
+    /// wheels still wait on, the tracking reference or the last keyframe. It and every newer
+    /// keyframe stay.
+    fn oldest_kept_slot(&self) -> usize {
+        let keep: HashSet<usize> = self
+            .wheel
+            .as_ref()
+            .into_iter()
+            .flat_map(|w| w.pending_keyframes())
+            .chain(self.state.current_keyframe_idx)
+            // Also the keyframe a suspended fusion waits on: the suspension is read only while it
+            // names the last keyframe, and is never cleared, so keeping it once a newer keyframe
+            // exists would pin it and everything newer for the life of the map.
+            .chain(self.state.last_keyframe_idx)
+            .collect();
+        let keyframes = self.map.keyframes();
+        keyframes
+            .iter()
+            .position(|kf| keep.contains(&kf.frame.idx))
+            .unwrap_or(keyframes.len())
+    }
+
+    /// Evicts the oldest keyframes down to `cap - 1`, so the map slides instead of dropping.
+    /// Refused under the gates culling has (the inertial initialization and refinements read
+    /// their window's keyframes as they are) and when that would reach a kept keyframe.
+    fn evict_for_room(&mut self, cap: usize) -> usize {
+        // `info!`, not `debug!`: every refusal here drops the map, and release builds compile
+        // `debug!` out, so the drop's warning would be the only trace.
+        if self.inertial_unsettled() || self.refinement_pending() {
+            info!(
+                "keyframe eviction: the inertial path is not settled, nothing evicted keyframes={}",
+                self.map.keyframes().len()
+            );
+            return 0;
+        }
+        let keep = cap.saturating_sub(1);
+        let before = self.map.keyframes().len();
+        if before.saturating_sub(keep) > self.oldest_kept_slot() {
+            info!(
+                "keyframe eviction: would reach a kept keyframe keyframes={} oldest_kept_slot={}",
+                before,
+                self.oldest_kept_slot()
+            );
+            return 0;
+        }
+        let report = evict_oldest_keyframes(
+            &mut self.map,
+            keep,
+            self.wheel.as_mut().map(|w| w.factors_mut()),
+            self.config
+                .stationary_edges
+                .is_some()
+                .then_some(&mut self.stationary_factors),
+        );
+        debug_assert!(self.stationary_factors.iter().all(|f| {
+            self.map.get_keyframe(f.from_idx).is_some() && self.map.get_keyframe(f.to_idx).is_some()
+        }));
+        let evicted: HashSet<usize> = report.evicted.iter().copied().collect();
+        self.kf_tracked_poses
+            .retain(|(idx, _, _)| !evicted.contains(idx));
+        self.kf_cov.retain(|idx, _| !evicted.contains(idx));
+        self.evicted_keyframes += evicted.len() as u64;
+        info!(
+            "keyframe eviction: evicted={} keyframes={} -> {} imu_edges_dropped={} \
+             wheel_edges_dropped={} stationary_edges_dropped={} landmarks_retired={} \
+             evicted_total={}",
+            evicted.len(),
+            before,
+            self.map.keyframes().len(),
+            report.imu_edges_dropped,
+            report.wheel_edges_dropped,
+            report.stationary_edges_dropped,
+            report.landmarks_retired,
+            self.evicted_keyframes
+        );
+        if self.map.keyframes().len() > keep {
+            info!(
+                "keyframe eviction: stopped short of the target, the map will drop keyframes={} \
+                 target={}",
+                self.map.keyframes().len(),
+                keep
+            );
+        }
+        evicted.len()
+    }
+
+    /// Keyframes evicted by [`TrackerConfig::evict_oldest_at_bound`], lifetime. See the field.
+    pub fn evicted_keyframes(&self) -> u64 {
+        self.evicted_keyframes
     }
 
     /// Keyframes removed by [`TrackerConfig::keyframe_culling`], lifetime. See the field.
@@ -3355,7 +3448,12 @@ impl Tracker {
             .state
             .lost_since_sec
             .map_or(0.0, |t0| timestamp_sec - t0);
-        let search_scale = self.estimator.config().search_scale_for(currently_lost_for);
+        // The gradual widening this tracker has always had: kornia-slam widens at once behind an
+        // inertial prediction, which is untested here.
+        let search_scale = self
+            .estimator
+            .config()
+            .search_scale_for(currently_lost_for, false);
 
         let t_est = std::time::Instant::now();
         let result = self.estimator.estimate_pose(
@@ -12227,8 +12325,13 @@ mod tests {
     /// again, a second drive. The drives' keyframes are not redundant (ORB-SLAM's 90 % is a parked
     /// or slow robot's), so the room comes from the stops.
     fn long_parked_then_moving_run(culling: bool, wheels: bool) -> LongRun {
+        long_run(culling, false, wheels)
+    }
+
+    fn long_run(culling: bool, evict: bool, wheels: bool) -> LongRun {
         let mut tracker = scene_tracker_with(|c| {
             c.max_keyframes = Some(CULL_TEST_CAP);
+            c.evict_oldest_at_bound = evict;
             c.keyframe_culling = culling.then(cull_test_config);
             if wheels {
                 c.wheel_odom = Some(scene_wheel_config());
@@ -12535,6 +12638,51 @@ mod tests {
             tracker.live_map_points(),
             tracker.map().num_active_map_points()
         );
+    }
+
+    /// Eviction alone, culling off, keeps the long run that drops without it in one map: the
+    /// oldest keyframes go, the map stays at the bound and every frame is tracked.
+    ///
+    /// Mutation: `arm_map_bound` not calling `evict_for_room` turned this red.
+    #[test]
+    fn eviction_keeps_a_long_run_in_one_map_without_culling() {
+        for wheels in [false, true] {
+            let run = long_run(false, true, wheels);
+            assert_eq!(run.drops, 0, "wheels={wheels}: the map was dropped");
+            assert_eq!(run.culled, 0);
+            assert!(
+                run.tracker.evicted_keyframes() > 0,
+                "wheels={wheels}: nothing evicted; the test lost its point"
+            );
+            assert_eq!(run.world_generations, 0, "wheels={wheels}");
+            assert_eq!(run.untracked, 0, "wheels={wheels}: frames lost");
+            assert!(run.most_keyframes <= CULL_TEST_CAP, "wheels={wheels}");
+            let map = run.tracker.map();
+            assert!(
+                map.imu_factors()
+                    .iter()
+                    .all(|f| map.get_keyframe(f.prev_kf_idx).is_some()
+                        && map.get_keyframe(f.curr_kf_idx).is_some()),
+                "wheels={wheels}: an IMU edge names an evicted keyframe"
+            );
+            if let Some(w) = run.tracker.wheel.as_ref() {
+                assert!(
+                    w.factors()
+                        .iter()
+                        .all(|f| map.get_keyframe(f.from_idx).is_some()
+                            && map.get_keyframe(f.to_idx).is_some())
+                );
+            }
+        }
+    }
+
+    /// Eviction waits for a settled inertial path, as culling does.
+    #[test]
+    fn eviction_waits_for_a_settled_inertial_path() {
+        let mut tracker = parked_map(Some(inertial_config()), 100);
+        let cap = tracker.map().keyframes().len();
+        assert_eq!(tracker.evict_for_room(cap), 0, "not initialized");
+        assert_eq!(tracker.map().keyframes().len(), cap);
     }
 
     /// Culling off (the default) is the map bound as it always was: armed at the cap.

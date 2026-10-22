@@ -68,7 +68,7 @@ pub mod wheel_channel;
 pub mod wheel_feed;
 
 pub use bus::VioBus;
-pub use config::OnTrackingLoss;
+pub use config::{AtKeyframeBound, OnTrackingLoss};
 pub use consistency::{ConsistencyStats, MotionVerdict};
 pub use error::VioError;
 pub use feed::ImuFeed;

@@ -8,7 +8,7 @@
 
 use std::sync::Arc;
 
-use crate::config::{InertialRon, OnTrackingLoss, WheelOdomRon};
+use crate::config::{AtKeyframeBound, InertialRon, OnTrackingLoss, WheelOdomRon};
 use crate::diag::{StreamCounters, frame_diagnostics, seq_gap};
 use crate::imu_channel::ImuQueue;
 use crate::pose::cam_in_world;
@@ -205,6 +205,9 @@ pub struct StereoVio {
     on_tracking_loss: OnTrackingLoss,
     /// Keyframe budget from the RON config; `None` is unbounded.
     max_keyframes: Option<usize>,
+    /// What reaching `max_keyframes` does; see [`AtKeyframeBound`].
+    #[reflect(ignore)]
+    at_keyframe_bound: AtKeyframeBound,
     /// Tracking-cost knobs from the RON config; `None` keeps the tracker's own default.
     /// `estimate_pose` was 96 ms of a 100 ms tracking step on a Jetson Orin before the ORB/PnP
     /// tuning, so these are the only levers on the frame rate that do not touch kornia-slam.
@@ -479,6 +482,7 @@ impl CuTask for StereoVio {
             calib: RectifiedStereo::default(),
             eye_size: (0, 0),
             on_tracking_loss: crate::config::on_tracking_loss(config)?,
+            at_keyframe_bound: crate::config::at_keyframe_bound(config, max_keyframes)?,
             max_keyframes,
             orb_keypoints: crate::config::optional_positive_usize(
                 config,
@@ -589,6 +593,8 @@ impl CuTask for StereoVio {
                 config.reset_map_on_loss =
                     matches!(self.on_tracking_loss, OnTrackingLoss::ResetMap);
                 config.max_keyframes = self.max_keyframes;
+                config.evict_oldest_at_bound =
+                    matches!(self.at_keyframe_bound, AtKeyframeBound::EvictOldest);
                 config.keyframe_policy = self.keyframe_insertion.policy;
                 config.keyframe_max_interval = self.keyframe_insertion.max_interval;
                 config.keyframe_culling = self.keyframe_culling.clone();
@@ -847,9 +853,10 @@ impl CuTask for StereoVio {
         );
         if let Some(t) = self.tracker.as_ref() {
             info!(
-                "vio map: {} maps dropped, {} keyframes culled",
+                "vio map: {} maps dropped, {} keyframes culled, {} evicted",
                 t.map_drops(),
-                t.culled_keyframes()
+                t.culled_keyframes(),
+                t.evicted_keyframes()
             );
         }
         if let Some(s) = self.tracker.as_ref().and_then(|t| t.stationary_stats()) {

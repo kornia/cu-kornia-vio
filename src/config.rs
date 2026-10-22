@@ -44,6 +44,44 @@ pub enum OnTrackingLoss {
     ResetMap,
 }
 
+/// What the tracker does when an insertion takes the map to `max_keyframes` and culling (if on)
+/// cannot make room: the `at_keyframe_bound` key, spelled `"drop_map"` or `"evict_oldest"`.
+///
+/// Culling removes only redundant keyframes, and a robot driving through new space makes few:
+/// its keyframes stay under ORB-SLAM's 90 % coverage, so the bound used to drop the map mid-drive.
+/// `evict_oldest` keeps the map as a sliding window instead, until its landmark slots reach
+/// `max_keyframes * orb_keypoints`: evicted landmarks keep their slots, so that bound still drops.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AtKeyframeBound {
+    /// Drop the map and start a new tracker world.
+    #[default]
+    DropMap,
+    /// Evict the oldest keyframes down to one below the bound.
+    EvictOldest,
+}
+
+/// Reads the optional `at_keyframe_bound` policy, defaulting to [`AtKeyframeBound::DropMap`].
+/// `evict_oldest` needs `max_keyframes`: that is what it acts at.
+pub(crate) fn at_keyframe_bound(
+    config: Option<&ComponentConfig>,
+    max_keyframes: Option<usize>,
+) -> CuResult<AtKeyframeBound> {
+    let policy = config
+        .map(|c| c.get_value::<AtKeyframeBound>(AT_KEYFRAME_BOUND))
+        .transpose()?
+        .flatten()
+        .unwrap_or_default();
+    if policy == AtKeyframeBound::EvictOldest && max_keyframes.is_none() {
+        return Err(format!(
+            "`{AT_KEYFRAME_BOUND}: evict_oldest` acts when the map reaches `{MAX_KEYFRAMES}`, \
+             which is not set"
+        )
+        .into());
+    }
+    Ok(policy)
+}
+
 /// Reads the optional `on_tracking_loss` policy, defaulting to [`OnTrackingLoss::KeepMap`].
 pub(crate) fn on_tracking_loss(config: Option<&ComponentConfig>) -> CuResult<OnTrackingLoss> {
     Ok(config
@@ -1001,6 +1039,7 @@ macro_rules! config_keys {
 config_keys! {
     ON_TRACKING_LOSS => "on_tracking_loss",
     MAX_KEYFRAMES => "max_keyframes",
+    AT_KEYFRAME_BOUND => "at_keyframe_bound",
     ORB_KEYPOINTS => "orb_keypoints",
     SEARCH_RADIUS_PX => "search_radius_px",
     MAX_COVISIBLE_KEYFRAMES => "max_covisible_keyframes",
@@ -1072,6 +1111,29 @@ mod tests {
         );
         assert!(parse("reset").is_err());
         assert_eq!(on_tracking_loss(None).ok(), Some(OnTrackingLoss::KeepMap));
+    }
+
+    #[test]
+    fn test_at_keyframe_bound_reads_the_snake_case_spelling_and_needs_the_bound() {
+        let parse = |text: &str, cap: Option<usize>| {
+            let mut cfg = ComponentConfig::new();
+            cfg.set(AT_KEYFRAME_BOUND, text.to_string());
+            at_keyframe_bound(Some(&cfg), cap)
+        };
+        assert_eq!(
+            parse("evict_oldest", Some(120)).ok(),
+            Some(AtKeyframeBound::EvictOldest)
+        );
+        assert_eq!(parse("drop_map", None).ok(), Some(AtKeyframeBound::DropMap));
+        assert!(parse("EvictOldest", Some(120)).is_err());
+        assert!(
+            parse("evict_oldest", None).is_err(),
+            "evicting without a bound never acts"
+        );
+        assert_eq!(
+            at_keyframe_bound(None, None).ok(),
+            Some(AtKeyframeBound::DropMap)
+        );
     }
 
     /// `optional_positive_f64` is the guard on every float geometry knob, and had no test.

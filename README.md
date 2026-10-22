@@ -90,7 +90,7 @@ cnx: [
 - **`StereoVio`** takes a `StereoPair` and emits a `VioPose`, draining the bus queue once per
   frame. Unknown config keys are refused at startup rather than ignored. The recognised keys are
   `on_tracking_loss` (`keep_map`, the default, or `reset_map` for a long-running graph),
-  `max_keyframes`, `orb_keypoints`, `search_radius_px`, `max_covisible_keyframes`,
+  `max_keyframes`, `at_keyframe_bound` (`drop_map`, the default, or `evict_oldest`), `orb_keypoints`, `search_radius_px`, `max_covisible_keyframes`,
   `pnp_lm_iterations`, `inertial`, `landmark_buffers`, `wheel_odom`, `per_frame_fusion`,
   `keyframe_policy` (insertion thresholds, parallax, a time bound), `keyframe_culling`,
   `stationary_edges` and `motion_veto` (on when absent; see Motion veto);
@@ -415,11 +415,11 @@ It applies in three directions:
   exact requirement kornia-slam uses. A git spelling of kornia-rs is a different
   source even at identical code (v0.1.15 at `c9f9fd7` is the same code as 0.2.0), and splits
   `Image` in two. `kornia-slam` AND `kornia-sensors` (the latter is a workspace member of the
-  kornia-slam repo, not of kornia-rs) are on one git `rev =`: kornia-slam `main` at `539e4f1`,
-  the squash merge of kornia/kornia-slam#161 (the parked-BA depth gate, landmark re-seed and
-  write-back refusal, and constructors for the `#[non_exhaustive]` factor types), on top of
-  `bda9631` (the squash merge of #158: the wheel-odometry factor, stationary IMU init, parallax
-  keyframes and culling). They move to crates.io at
+  kornia-slam repo, not of kornia-rs) are on one git `rev =`: kornia-slam
+  `feat/evict-oldest-keyframes` at `fbb790c`, which is `main` at `05ea01c` (#153's tracking
+  recovery, on top of #161's parked-BA fixes and #158's wheel-odometry factor, stationary IMU
+  init, parallax keyframes and culling) plus keyframe eviction. It is re-pinned to the merge
+  commit once that lands. They move to crates.io at
   the first release that carries it, and every consumer must move with them.
 - **this repo's own two crates**: a consumer naming both `cu-kornia-vio` and `cu-stereo-payloads`
   must give them the identical URL and the identical `branch = "main"`. `cu-kornia-vio` reaches the
@@ -431,8 +431,7 @@ It applies in three directions:
   `https://github.com/kornia/cu-kornia-vio` everywhere.
 
 `Cargo.lock` is tracked so that a clean clone builds: it holds a kornia-rs / kornia-slam pair
-known to compile together (kornia-rs 0.2.0 from crates.io, kornia-slam `main` at
-`539e4f1`). A consumer's own lock still wins, but a kornia-slam from before its move to crates.io kornia-rs
+known to compile together (kornia-rs 0.2.0 from crates.io, kornia-slam at `fbb790c`). A consumer's own lock still wins, but a kornia-slam from before its move to crates.io kornia-rs
 (`6820744`) names git kornia-rs and splits the graph, and one from before its map-API rework
 does not compile against this crate.
 
@@ -453,13 +452,16 @@ does not compile against this crate.
   and rebuilt when it reaches the bound. With `"keyframe_culling": (enabled: true)` the tracker
   first removes redundant keyframes there (ORB-SLAM's rule, IMU and wheel edges merged) and drops
   the map only if that cannot make room. Culling waits for a settled inertial path, and while
-  driving few keyframes are redundant: the room comes mostly from stops. With the inertial path
+  driving few keyframes are redundant: the room comes mostly from stops. With
+  `"at_keyframe_bound": "evict_oldest"` the tracker then evicts the oldest keyframes instead of
+  dropping the map, so a drive through new space keeps one map as a sliding window; what the
+  evicted keyframes constrained is lost with them. With the inertial path
   on, that needs `max_merged_imu_span_s` of at least twice the parked keyframe spacing
   (`parked_keyframe_interval_s` plus 0.25 s for the frame that lands past it), which startup
   checks; `stationary_edges` lifts that limit for a settled inertial path (see
   [Parked keyframes](#parked-keyframes)). Culling bounds keyframes, not landmark
   slots (kornia-slam never compacts those), so the map is still dropped once it holds
-  `max_keyframes * orb_keypoints` of them.
+  `max_keyframes * orb_keypoints` of them; with eviction that is what bounds a long drive.
 
 ## License
 
