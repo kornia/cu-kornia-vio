@@ -7445,16 +7445,6 @@ mod tests {
         }
     }
 
-    /// Our pyramid must be dimension-identical to `OrbDetector`'s at every
-    /// level, for every resolution we ship.
-    ///
-    /// `kornia_slam::stereo` scales a keypoint that `OrbDetector` found at
-    /// octave `o` by `1.2^-o` and indexes OUR level `o` with it. If the two
-    /// pyramids disagree by even one pixel at some level, that indexing is
-    /// wrong for every keypoint at that octave and the failure is a quiet
-    /// disparity bias, not a panic. Checked against the exact upstream formula
-    /// (f64 + `round_ties_even`), not against `1.2^-o` rounded some other way —
-    /// that is the difference this test exists to catch.
     /// The per-frame refill must equal a fresh build AND reuse the buffers: a refill that rebuilt
     /// would pass the first half and allocate the 12 images per frame it exists to remove.
     #[test]
@@ -7486,6 +7476,16 @@ mod tests {
         }
     }
 
+    /// Our pyramid must be dimension-identical to `OrbDetector`'s at every
+    /// level, for every resolution we ship.
+    ///
+    /// `kornia_slam::stereo` scales a keypoint that `OrbDetector` found at
+    /// octave `o` by `1.2^-o` and indexes OUR level `o` with it. If the two
+    /// pyramids disagree by even one pixel at some level, that indexing is
+    /// wrong for every keypoint at that octave and the failure is a quiet
+    /// disparity bias, not a panic. Checked against the exact upstream formula
+    /// (f64 + `round_ties_even`), not against `1.2^-o` rounded some other way —
+    /// that is the difference this test exists to catch.
     #[test]
     fn test_pyramid_levels_match_the_orb_extractor_sizes_exactly() {
         // Verbatim from kornia-imgproc `features/orb/extractor.rs`:
