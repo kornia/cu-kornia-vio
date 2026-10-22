@@ -13,7 +13,7 @@ use crate::diag::{StreamCounters, frame_diagnostics, seq_gap};
 use crate::imu_channel::ImuQueue;
 use crate::pose::cam_in_world;
 use crate::reset::ResetEpoch;
-use crate::stats::{Durations, TrackerTiming};
+use crate::stats::{Durations, StageTiming, TrackerTiming};
 use crate::tap::VioTap;
 use crate::task_error::{Eye, TaskError};
 use crate::track::{TrackStatus, Tracker, TrackerConfig};
@@ -285,6 +285,14 @@ pub struct StereoVio {
 /// cost a full map copy per frame. What that gives up: a resim reproduces this task only from
 /// the start of a log, never from a mid-log keyframe.
 impl Freezable for StereoVio {}
+
+impl StereoVio {
+    /// Per-stage solve time so far, `None` before the first frame built the tracker. Read by an
+    /// offline replay; the task's `stop()` logs the same table.
+    pub fn stage_timing(&self) -> Option<&StageTiming> {
+        self.tracker.as_ref().map(|t| t.stage_timing())
+    }
+}
 
 /// Copies one eye out of a payload into an image the tracker can consume.
 ///
@@ -893,6 +901,18 @@ impl CuTask for StereoVio {
             t.keyframe_frames(),
             t.total_frames()
         );
+        if let Some(st) = self.tracker.as_ref().map(|t| t.stage_timing()) {
+            for (stage, d) in st.stages() {
+                info!(
+                    "vio stage {}: n={} p50_ms={} p99_ms={} max_ms={}",
+                    stage,
+                    d.len(),
+                    ms(d, 50.0),
+                    ms(d, 99.0),
+                    ms(d, 100.0)
+                );
+            }
+        }
         // Only when non-zero. The gyro prior falls back to the constant-velocity model in
         // silence, so a prior that never once applied is indistinguishable from a working one.
         if let Some(n) = self.tracker.as_ref().map(|t| t.gyro_prior_unavailable())

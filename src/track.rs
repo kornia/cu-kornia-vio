@@ -132,6 +132,7 @@ use crate::parked::{
     StationaryEdgeConfig, StationaryRun, StationaryStats, edge_anchor,
 };
 use crate::stationary::{NotStill, StaticInitConfig, check_camera, check_imu, check_wheels};
+use crate::stats::StageTiming;
 use crate::veto::{Disagreement, Gate, MotionVetoConfig, Sensors, VetoState, VetoStats};
 use crate::wheel::{WheelOdomConfig, WheelSample, WheelState, WheelStats, WheelWindowError};
 use cu_stereo_payloads::ImuSample;
@@ -1219,6 +1220,8 @@ pub struct Tracker {
     /// Keyframes removed by [`TrackerConfig::keyframe_culling`], lifetime. A cull is not a drop:
     /// the world, its generation and every other keyframe stay as they were.
     culled_keyframes: u64,
+    /// Per-stage solve time, from the timers below; reported at the task's `stop()`.
+    stage_timing: StageTiming,
     /// Maps discarded by ANY reset (requested, loss, size bound, refused biases), lifetime: each
     /// one means the next bootstrap starts a new map. Not `world_generation`, which also moves on
     /// an inertial alignment and a kept-map re-bootstrap, neither of which starts a map.
@@ -1788,6 +1791,7 @@ impl Tracker {
             frame_report: FrameReport::default(),
             map_drops: 0,
             culled_keyframes: 0,
+            stage_timing: StageTiming::default(),
             map_generation: 0,
             anchored_since_reset: false,
             last_motion: MotionCheck::default(),
@@ -1865,6 +1869,10 @@ impl Tracker {
         // decides whether the fix is a feature budget or a map bound. The four fields sum
         // to the whole call.
         let track_ms = t0.elapsed().as_secs_f64() * 1e3 - orb_ms - pyr_ms - stereo_ms;
+        self.stage_timing.orb.push_ms(orb_ms);
+        self.stage_timing.pyramid.push_ms(pyr_ms);
+        self.stage_timing.stereo.push_ms(stereo_ms);
+        self.stage_timing.track.push_ms(track_ms);
         debug!(
             "process_stereo stage split: orb_ms={} pyr_ms={} stereo_ms={} track_ms={}",
             orb_ms, pyr_ms, stereo_ms, track_ms
@@ -2662,6 +2670,11 @@ impl Tracker {
             self.culled_keyframes
         );
         removed.len()
+    }
+
+    /// Per-stage solve time. See [`StageTiming`].
+    pub fn stage_timing(&self) -> &StageTiming {
+        &self.stage_timing
     }
 
     /// Keyframes removed by [`TrackerConfig::keyframe_culling`], lifetime. See the field.
@@ -3615,6 +3628,11 @@ impl Tracker {
                 status = TrackingStatus::KeyframeAccepted;
             }
             let kf_ms = t_kf.elapsed().as_secs_f64() * 1e3;
+            self.stage_timing.estimate.push_ms(est_ms);
+            self.stage_timing.bookkeep.push_ms(bookkeep_ms);
+            if inserted {
+                self.stage_timing.keyframe.push_ms(kf_ms);
+            }
             // Splits `track_ms` from the `process_stereo stage split` line one level further.
             // `estimate_pose` is projection matching + PnP; `bookkeep` is the local-map
             // visibility accounting that feeds culling; `kf` is insertion (grow/fuse/BA).

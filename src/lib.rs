@@ -58,6 +58,7 @@ pub mod pose;
 pub mod reset;
 pub mod stationary;
 mod stats;
+pub use stats::{Durations, StageTiming};
 pub mod tap;
 pub mod task;
 pub mod task_error;
