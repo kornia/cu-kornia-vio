@@ -23,6 +23,9 @@ use std::time::Duration;
 /// Cap on retained samples: ~3 hours at 10 Hz, 800 kB.
 const MAX_SAMPLES: usize = 100_000;
 
+/// Cap per [`StageTiming`] stage: ~35 min at 10 Hz, 160 kB each, eight stages.
+const STAGE_SAMPLES: usize = 20_000;
+
 /// A stream of durations, kept in full so percentiles are exact — up to [`MAX_SAMPLES`].
 ///
 /// Retaining every sample is affordable for an offline clip (584 frames is 584 f64s) and avoids
@@ -33,6 +36,7 @@ const MAX_SAMPLES: usize = 100_000;
 /// lines from long runs should be read that way.
 pub struct Durations {
     ms: std::collections::VecDeque<f64>,
+    cap: usize,
 }
 
 impl Default for Durations {
@@ -40,24 +44,41 @@ impl Default for Durations {
     /// task's `process`, and a growing ring would reallocate on that path. 800 kB per
     /// population, paid once at construction.
     fn default() -> Self {
-        Self {
-            ms: std::collections::VecDeque::with_capacity(MAX_SAMPLES),
-        }
+        Self::with_capacity(MAX_SAMPLES)
     }
 }
 
 impl Durations {
-    /// Records one sample, evicting the oldest past [`MAX_SAMPLES`].
+    /// A ring of `cap` samples (at least one), reserved up front.
+    pub fn with_capacity(cap: usize) -> Self {
+        let cap = cap.max(1);
+        Self {
+            ms: std::collections::VecDeque::with_capacity(cap),
+            cap,
+        }
+    }
+
+    /// Records one sample, evicting the oldest past the cap.
     pub fn push(&mut self, d: Duration) {
-        if self.ms.len() == MAX_SAMPLES {
+        self.push_ms(d.as_secs_f64() * 1e3);
+    }
+
+    /// Records one sample already in milliseconds.
+    pub fn push_ms(&mut self, ms: f64) {
+        if self.ms.len() == self.cap {
             self.ms.pop_front();
         }
-        self.ms.push_back(d.as_secs_f64() * 1e3);
+        self.ms.push_back(ms);
     }
 
     /// How many samples.
     pub fn len(&self) -> usize {
         self.ms.len()
+    }
+
+    /// Whether no sample was recorded.
+    pub fn is_empty(&self) -> bool {
+        self.ms.is_empty()
     }
 
     /// Nearest-rank percentile in milliseconds, or `None` if empty.
@@ -75,6 +96,64 @@ impl Durations {
         v.sort_by(f64::total_cmp);
         let rank = ((p / 100.0) * v.len() as f64).ceil() as usize;
         Some(v[rank.clamp(1, v.len()) - 1])
+    }
+}
+
+/// Where a frame's solve goes, per stage, from the timers the tracker already runs. The stereo
+/// frontend (ORB, pyramids, stereo) is fixed cost per frame; `estimate` (projection matching +
+/// PnP) scales with the local map; `keyframe` runs only on insertion.
+///
+/// `#[non_exhaustive]`: a new stage is an added field, not a breaking change.
+#[non_exhaustive]
+pub struct StageTiming {
+    /// ORB on both eyes.
+    pub orb: Durations,
+    /// The two SAD pyramids.
+    pub pyramid: Durations,
+    /// Stereo matching.
+    pub stereo: Durations,
+    /// Everything after the frontend: `process_frame` and the frame build.
+    pub track: Durations,
+    /// `estimate_pose`, tracked frames only.
+    pub estimate: Durations,
+    /// Fusion, veto and local-map bookkeeping after `estimate_pose`, tracked frames only.
+    pub bookkeep: Durations,
+    /// Keyframe insertion (grow, fuse, local BA, cull), inserting frames only.
+    pub keyframe: Durations,
+    /// Local BA inside insertion: the window snapshot and the solve, keyframes that ran it.
+    pub local_ba: Durations,
+}
+
+impl Default for StageTiming {
+    fn default() -> Self {
+        let d = || Durations::with_capacity(STAGE_SAMPLES);
+        Self {
+            orb: d(),
+            pyramid: d(),
+            stereo: d(),
+            track: d(),
+            estimate: d(),
+            bookkeep: d(),
+            keyframe: d(),
+            local_ba: d(),
+        }
+    }
+}
+
+impl StageTiming {
+    /// Every stage with its name, in pipeline order.
+    pub fn stages(&self) -> impl Iterator<Item = (&'static str, &Durations)> {
+        [
+            ("orb", &self.orb),
+            ("pyramid", &self.pyramid),
+            ("stereo", &self.stereo),
+            ("track", &self.track),
+            ("estimate", &self.estimate),
+            ("bookkeep", &self.bookkeep),
+            ("keyframe", &self.keyframe),
+            ("local_ba", &self.local_ba),
+        ]
+        .into_iter()
     }
 }
 

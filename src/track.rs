@@ -132,6 +132,7 @@ use crate::parked::{
     StationaryEdgeConfig, StationaryRun, StationaryStats, edge_anchor,
 };
 use crate::stationary::{NotStill, StaticInitConfig, check_camera, check_imu, check_wheels};
+use crate::stats::StageTiming;
 use crate::veto::{Disagreement, Gate, MotionVetoConfig, Sensors, VetoState, VetoStats};
 use crate::wheel::{WheelOdomConfig, WheelSample, WheelState, WheelStats, WheelWindowError};
 use cu_stereo_payloads::ImuSample;
@@ -1219,6 +1220,11 @@ pub struct Tracker {
     /// Keyframes removed by [`TrackerConfig::keyframe_culling`], lifetime. A cull is not a drop:
     /// the world, its generation and every other keyframe stay as they were.
     culled_keyframes: u64,
+    /// Per-stage solve time, from the timers below; reported at the task's `stop()`.
+    stage_timing: StageTiming,
+    /// The two eyes' SAD pyramids, refilled in place every frame: built fresh, they were 12
+    /// image-sized (mmap-sized) allocations per frame.
+    pyramids: [Vec<Image<u8, 1>>; 2],
     /// Maps discarded by ANY reset (requested, loss, size bound, refused biases), lifetime: each
     /// one means the next bootstrap starts a new map. Not `world_generation`, which also moves on
     /// an inertial alignment and a kept-map re-bootstrap, neither of which starts a map.
@@ -1788,6 +1794,8 @@ impl Tracker {
             frame_report: FrameReport::default(),
             map_drops: 0,
             culled_keyframes: 0,
+            stage_timing: StageTiming::default(),
+            pyramids: Default::default(),
             map_generation: 0,
             anchored_since_reset: false,
             last_motion: MotionCheck::default(),
@@ -1857,7 +1865,10 @@ impl Tracker {
         stamp: CuTime,
     ) -> Result<TrackStatus, VioError> {
         let t0 = std::time::Instant::now();
-        let (frame, [orb_ms, pyr_ms, stereo_ms]) = self.stereo_frame(left, right)?;
+        let mut pyramids = std::mem::take(&mut self.pyramids);
+        let built = self.stereo_frame(left, right, &mut pyramids);
+        self.pyramids = pyramids;
+        let (frame, [orb_ms, pyr_ms, stereo_ms]) = built?;
         let result = self.process_frame(frame, stamp);
         // Per-stage split at debug level: the frontend (ORB + pyramids + stereo) is fixed
         // cost per frame, while `track_ms` (colour sampling + Frame build + process_frame,
@@ -1865,6 +1876,10 @@ impl Tracker {
         // decides whether the fix is a feature budget or a map bound. The four fields sum
         // to the whole call.
         let track_ms = t0.elapsed().as_secs_f64() * 1e3 - orb_ms - pyr_ms - stereo_ms;
+        self.stage_timing.orb.push_ms(orb_ms);
+        self.stage_timing.pyramid.push_ms(pyr_ms);
+        self.stage_timing.stereo.push_ms(stereo_ms);
+        self.stage_timing.track.push_ms(track_ms);
         debug!(
             "process_stereo stage split: orb_ms={} pyr_ms={} stereo_ms={} track_ms={}",
             orb_ms, pyr_ms, stereo_ms, track_ms
@@ -1874,10 +1889,12 @@ impl Tracker {
 
     /// The stereo frontend of [`Self::process_stereo`]: ORB on both eyes, the pyramids and the
     /// stereo matches, as the [`Frame`] `process_frame` takes, with the three stages' cost in ms.
+    /// `pyramids` are the left and right SAD pyramids' buffers, refilled in place.
     fn stereo_frame(
         &self,
         left: &Image<u8, 1>,
         right: &Image<u8, 1>,
+        pyramids: &mut [Vec<Image<u8, 1>>; 2],
     ) -> Result<(Frame, [f64; 3]), VioError> {
         validate_camera(&self.camera, self.config.baseline.get::<meter>())?;
         if left.width() != right.width() || left.height() != right.height() {
@@ -1901,13 +1918,14 @@ impl Tracker {
         // pyramid internally, whose true scale at level o drifts from 1.2^-o.
         // Do not swap in a successive pyramid here without re-deriving that
         // mapping — and the mapping lives in read-only kornia-slam.
-        let left_pyramid = build_u8_pyramid(left)?;
-        let right_pyramid = build_u8_pyramid(right)?;
+        let [left_pyramid, right_pyramid] = pyramids;
+        fill_u8_pyramid(left, left_pyramid)?;
+        fill_u8_pyramid(right, right_pyramid)?;
         let pyr_ms = t0.elapsed().as_secs_f64() * 1e3 - orb_ms;
 
         let stereo = compute_stereo_matches(
-            &left_pyramid,
-            &right_pyramid,
+            left_pyramid,
+            right_pyramid,
             &features,
             &right_features,
             &self.stereo_config,
@@ -2662,6 +2680,11 @@ impl Tracker {
             self.culled_keyframes
         );
         removed.len()
+    }
+
+    /// Per-stage solve time. See [`StageTiming`].
+    pub fn stage_timing(&self) -> &StageTiming {
+        &self.stage_timing
     }
 
     /// Keyframes removed by [`TrackerConfig::keyframe_culling`], lifetime. See the field.
@@ -3615,6 +3638,11 @@ impl Tracker {
                 status = TrackingStatus::KeyframeAccepted;
             }
             let kf_ms = t_kf.elapsed().as_secs_f64() * 1e3;
+            self.stage_timing.estimate.push_ms(est_ms);
+            self.stage_timing.bookkeep.push_ms(bookkeep_ms);
+            if inserted {
+                self.stage_timing.keyframe.push_ms(kf_ms);
+            }
             // Splits `track_ms` from the `process_stereo stage split` line one level further.
             // `estimate_pose` is projection matching + PnP; `bookkeep` is the local-map
             // visibility accounting that feeds culling; `kf` is insertion (grow/fuse/BA).
@@ -4974,6 +5002,7 @@ impl Tracker {
             } else {
                 &[]
             };
+            let t_ba = std::time::Instant::now();
             let snapshot = self.map.ba_snapshot(&local_window_with_neighbors(
                 &self.map,
                 stationary.iter().map(|f| (f.from_idx, f.to_idx)),
@@ -5006,6 +5035,7 @@ impl Tracker {
                 }
                 None => run_local_ba(snapshot, &self.camera),
             };
+            self.stage_timing.local_ba.push(t_ba.elapsed());
             // What the inertial solve did (`run_local_ba` reports nothing). Read here, before
             // the update is consumed, and logged whatever becomes of it below: a refused solve
             // is the one whose figures matter most.
@@ -5210,13 +5240,14 @@ impl Tracker {
 
         cull_landmarks(&mut self.map);
 
+        // No `num_active_map_points()` here: a compiled-out `debug!` still evaluates its arguments,
+        // and that one scans every landmark slot ever created, on every keyframe.
         debug!(
-            "keyframe inserted: frame={} grown={} fused={} neighbors={} map_points={} keyframes={}",
+            "keyframe inserted: frame={} grown={} fused={} neighbors={} keyframes={}",
             frame.idx,
             total_grown,
             n_fused,
             neighbor_kf_indices.len(),
-            self.map.num_active_map_points(),
             self.map.keyframes().len()
         );
         true
@@ -7303,6 +7334,21 @@ fn build_u8_pyramid(img: &Image<u8, 1>) -> Result<Vec<Image<u8, 1>>, VioError> {
     Ok(pyramid)
 }
 
+/// Refills `pyramid` with [`build_u8_pyramid`]'s levels for `img`, in place when the buffers
+/// already have `img`'s sizes (every frame after the first), from scratch otherwise.
+fn fill_u8_pyramid(img: &Image<u8, 1>, pyramid: &mut Vec<Image<u8, 1>>) -> Result<(), VioError> {
+    if pyramid.len() != ORB_N_LEVELS || pyramid[0].size() != img.size() {
+        *pyramid = build_u8_pyramid(img)?;
+        return Ok(());
+    }
+    let (base, levels) = pyramid.split_at_mut(1);
+    base[0].as_slice_mut().copy_from_slice(img.as_slice());
+    for dst in levels {
+        resize_fast_mono(img, dst, InterpolationMode::Bilinear)?;
+    }
+    Ok(())
+}
+
 /// Samples one grey value per keypoint from the left image, truncating then
 /// clamping the coordinates (the upstream kornia-slam example does exactly this).
 fn sample_keypoint_colors(gray: &Image<u8, 1>, keypoints_xy: &[[f32; 2]]) -> Vec<[u8; 3]> {
@@ -7394,6 +7440,37 @@ mod tests {
         for (level, img) in pyramid.iter().enumerate() {
             let expect = (640.0 / 1.2f64.powi(level as i32)).round() as usize;
             assert_eq!(img.width(), expect.max(1), "level {level}");
+        }
+    }
+
+    /// The per-frame refill must equal a fresh build AND reuse the buffers: a refill that rebuilt
+    /// would pass the first half and allocate the 12 images per frame it exists to remove.
+    #[test]
+    fn test_pyramid_refill_matches_a_fresh_build_and_reuses_its_buffers() {
+        let size = ImageSize {
+            width: 640,
+            height: 400,
+        };
+        let frame = |seed: u8| {
+            let px = (0..size.width * size.height)
+                .map(|i| (i as u8).wrapping_mul(31).wrapping_add(seed))
+                .collect();
+            Image::<u8, 1>::new(size, px).unwrap()
+        };
+        let mut pyramid = Vec::new();
+        fill_u8_pyramid(&frame(1), &mut pyramid).unwrap();
+        let buffers: Vec<*const u8> = pyramid.iter().map(|l| l.as_slice().as_ptr()).collect();
+        let next = frame(2);
+        fill_u8_pyramid(&next, &mut pyramid).unwrap();
+        let fresh = build_u8_pyramid(&next).unwrap();
+        for (level, (got, want)) in pyramid.iter().zip(&fresh).enumerate() {
+            assert_eq!(got.size(), want.size(), "level {level}");
+            assert_eq!(got.as_slice(), want.as_slice(), "level {level}");
+            assert_eq!(
+                got.as_slice().as_ptr(),
+                buffers[level],
+                "level {level} reallocated"
+            );
         }
     }
 
@@ -12930,7 +13007,9 @@ mod tests {
             left = blank(&left);
             right = blank(&right);
         }
-        t.stereo_frame(&left, &right).expect("a valid pair").0
+        t.stereo_frame(&left, &right, &mut Default::default())
+            .expect("a valid pair")
+            .0
     }
 
     /// One parked frame at `seq` (15 Hz) replaying `frame`: the parked IMU since the last frame
