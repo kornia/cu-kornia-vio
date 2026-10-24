@@ -485,20 +485,19 @@ dependencies = [
 
 [[package]]
 name = "cu-bincode"
-version = "2.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c056e8c9d8cf3f467a1617daddacc4920d32b214ab371f98160033d6b9749138"
+version = "2.2.0"
+source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
 dependencies = [
  "cu-bincode-derive",
+ "cu29-value-types",
  "serde",
  "unty",
 ]
 
 [[package]]
 name = "cu-bincode-derive"
-version = "2.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02017dde7974608238c1bebbac86a36fdd7d7029400f76b0f400ee260e27ed14"
+version = "2.2.0"
+source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
 dependencies = [
  "virtue",
 ]
@@ -524,8 +523,8 @@ dependencies = [
 
 [[package]]
 name = "cu-sensor-payloads"
-version = "1.3.0-dev"
-source = "git+https://github.com/copper-project/copper-rs?rev=fe2061dc10539868334f6ded55a9e75feb0f2b62#fe2061dc10539868334f6ded55a9e75feb0f2b62"
+version = "1.4.0-dev"
+source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
 dependencies = [
  "cu-bincode",
  "cu29",
@@ -536,8 +535,8 @@ dependencies = [
 
 [[package]]
 name = "cu-spatial-payloads"
-version = "1.3.0-dev"
-source = "git+https://github.com/copper-project/copper-rs?rev=fe2061dc10539868334f6ded55a9e75feb0f2b62#fe2061dc10539868334f6ded55a9e75feb0f2b62"
+version = "1.4.0-dev"
+source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
 dependencies = [
  "cu-bincode",
  "cu29",
@@ -560,8 +559,8 @@ dependencies = [
 
 [[package]]
 name = "cu29"
-version = "1.3.0-dev"
-source = "git+https://github.com/copper-project/copper-rs?rev=fe2061dc10539868334f6ded55a9e75feb0f2b62#fe2061dc10539868334f6ded55a9e75feb0f2b62"
+version = "1.4.0-dev"
+source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
 dependencies = [
  "bevy_reflect_derive",
  "ctrlc",
@@ -586,13 +585,13 @@ dependencies = [
 
 [[package]]
 name = "cu29-build"
-version = "1.3.0-dev"
-source = "git+https://github.com/copper-project/copper-rs?rev=fe2061dc10539868334f6ded55a9e75feb0f2b62#fe2061dc10539868334f6ded55a9e75feb0f2b62"
+version = "1.4.0-dev"
+source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
 
 [[package]]
 name = "cu29-clock"
-version = "1.3.0-dev"
-source = "git+https://github.com/copper-project/copper-rs?rev=fe2061dc10539868334f6ded55a9e75feb0f2b62#fe2061dc10539868334f6ded55a9e75feb0f2b62"
+version = "1.4.0-dev"
+source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
 dependencies = [
  "bevy_reflect",
  "cortex-m",
@@ -604,14 +603,13 @@ dependencies = [
 
 [[package]]
 name = "cu29-derive"
-version = "1.3.0-dev"
-source = "git+https://github.com/copper-project/copper-rs?rev=fe2061dc10539868334f6ded55a9e75feb0f2b62#fe2061dc10539868334f6ded55a9e75feb0f2b62"
+version = "1.4.0-dev"
+source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
 dependencies = [
  "convert_case",
  "cu29-build",
  "cu29-runtime",
  "cu29-traits",
- "cu29-unifiedlog",
  "cu29-units",
  "itertools",
  "proc-macro2",
@@ -622,8 +620,8 @@ dependencies = [
 
 [[package]]
 name = "cu29-export"
-version = "1.3.0-dev"
-source = "git+https://github.com/copper-project/copper-rs?rev=fe2061dc10539868334f6ded55a9e75feb0f2b62#fe2061dc10539868334f6ded55a9e75feb0f2b62"
+version = "1.4.0-dev"
+source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
 dependencies = [
  "clap",
  "cu-bincode",
@@ -638,8 +636,8 @@ dependencies = [
 
 [[package]]
 name = "cu29-intern-strs"
-version = "1.3.0-dev"
-source = "git+https://github.com/copper-project/copper-rs?rev=fe2061dc10539868334f6ded55a9e75feb0f2b62#fe2061dc10539868334f6ded55a9e75feb0f2b62"
+version = "1.4.0-dev"
+source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
 dependencies = [
  "anyhow",
  "cu-bincode",
@@ -648,8 +646,8 @@ dependencies = [
 
 [[package]]
 name = "cu29-log"
-version = "1.3.0-dev"
-source = "git+https://github.com/copper-project/copper-rs?rev=fe2061dc10539868334f6ded55a9e75feb0f2b62#fe2061dc10539868334f6ded55a9e75feb0f2b62"
+version = "1.4.0-dev"
+source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
 dependencies = [
  "cu-bincode",
  "cu29-clock",
@@ -662,8 +660,8 @@ dependencies = [
 
 [[package]]
 name = "cu29-log-derive"
-version = "1.3.0-dev"
-source = "git+https://github.com/copper-project/copper-rs?rev=fe2061dc10539868334f6ded55a9e75feb0f2b62#fe2061dc10539868334f6ded55a9e75feb0f2b62"
+version = "1.4.0-dev"
+source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
 dependencies = [
  "cu29-build",
  "cu29-intern-strs",
@@ -676,8 +674,8 @@ dependencies = [
 
 [[package]]
 name = "cu29-log-runtime"
-version = "1.3.0-dev"
-source = "git+https://github.com/copper-project/copper-rs?rev=fe2061dc10539868334f6ded55a9e75feb0f2b62#fe2061dc10539868334f6ded55a9e75feb0f2b62"
+version = "1.4.0-dev"
+source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
 dependencies = [
  "cu-bincode",
  "cu29-build",
@@ -692,8 +690,8 @@ dependencies = [
 
 [[package]]
 name = "cu29-reflect-derive"
-version = "1.3.0-dev"
-source = "git+https://github.com/copper-project/copper-rs?rev=fe2061dc10539868334f6ded55a9e75feb0f2b62#fe2061dc10539868334f6ded55a9e75feb0f2b62"
+version = "1.4.0-dev"
+source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -702,8 +700,8 @@ dependencies = [
 
 [[package]]
 name = "cu29-runtime"
-version = "1.3.0-dev"
-source = "git+https://github.com/copper-project/copper-rs?rev=fe2061dc10539868334f6ded55a9e75feb0f2b62#fe2061dc10539868334f6ded55a9e75feb0f2b62"
+version = "1.4.0-dev"
+source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
 dependencies = [
  "arrayvec",
  "bevy_reflect",
@@ -731,6 +729,7 @@ dependencies = [
  "portable-atomic",
  "rayon",
  "ron",
+ "rtrb",
  "serde",
  "serde_derive",
  "serde_json",
@@ -741,8 +740,8 @@ dependencies = [
 
 [[package]]
 name = "cu29-soa-derive"
-version = "1.3.0-dev"
-source = "git+https://github.com/copper-project/copper-rs?rev=fe2061dc10539868334f6ded55a9e75feb0f2b62#fe2061dc10539868334f6ded55a9e75feb0f2b62"
+version = "1.4.0-dev"
+source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
 dependencies = [
  "quote",
  "syn 3.0.5",
@@ -750,8 +749,8 @@ dependencies = [
 
 [[package]]
 name = "cu29-traits"
-version = "1.3.0-dev"
-source = "git+https://github.com/copper-project/copper-rs?rev=fe2061dc10539868334f6ded55a9e75feb0f2b62#fe2061dc10539868334f6ded55a9e75feb0f2b62"
+version = "1.4.0-dev"
+source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
 dependencies = [
  "bevy_reflect",
  "compact_str",
@@ -764,36 +763,48 @@ dependencies = [
 
 [[package]]
 name = "cu29-unifiedlog"
-version = "1.3.0-dev"
-source = "git+https://github.com/copper-project/copper-rs?rev=fe2061dc10539868334f6ded55a9e75feb0f2b62#fe2061dc10539868334f6ded55a9e75feb0f2b62"
+version = "1.4.0-dev"
+source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
 dependencies = [
  "cu-bincode",
  "cu29-traits",
  "memmap2",
  "page_size",
+ "portable-atomic",
  "spin 0.12.3",
 ]
 
 [[package]]
 name = "cu29-units"
-version = "1.3.0-dev"
-source = "git+https://github.com/copper-project/copper-rs?rev=fe2061dc10539868334f6ded55a9e75feb0f2b62#fe2061dc10539868334f6ded55a9e75feb0f2b62"
+version = "1.4.0-dev"
+source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
 dependencies = [
  "bevy_reflect",
  "cu-bincode",
  "cu29-traits",
+ "cu29-value-types",
  "serde",
  "uom",
 ]
 
 [[package]]
 name = "cu29-value"
-version = "1.3.0-dev"
-source = "git+https://github.com/copper-project/copper-rs?rev=fe2061dc10539868334f6ded55a9e75feb0f2b62#fe2061dc10539868334f6ded55a9e75feb0f2b62"
+version = "1.4.0-dev"
+source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
 dependencies = [
  "cu-bincode",
  "cu29-clock",
+ "cu29-units",
+ "cu29-value-types",
  "ordered-float",
+ "serde",
+]
+
+[[package]]
+name = "cu29-value-types"
+version = "1.4.0-dev"
+source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
+dependencies = [
  "serde",
 ]
 
@@ -1548,9 +1559,9 @@ checksum = "e17592d60ebacc7d5e169f4663c5f84f9161cc90328abcfe8456f41e4dfcb284"
 
 [[package]]
 name = "html-escape"
-version = "0.2.15"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c9356095b4b41197bba32173600e1582792cda618f65d12f68e2e77d273413c5"
+checksum = "491194d601b4fa9fac3c9571e014070a0ad1bc3392d1bc10419695196a8b3cc3"
 
 [[package]]
 name = "indexmap"
@@ -2575,6 +2586,12 @@ dependencies = [
  "typeid",
  "unicode-ident",
 ]
+
+[[package]]
+name = "rtrb"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9278fb35b3e730abe136e9b395b5b81b96d06b9f5478a50f0c8430a2237b22de"
 
 [[package]]
 name = "rustc_version"

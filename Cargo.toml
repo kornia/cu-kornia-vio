@@ -9,17 +9,19 @@ members = ["crates/cu-stereo-payloads"]
 # type-check. `workspace = true` makes drift impossible to introduce by accident. Every copper-rs
 # crate below uses the IDENTICAL git + rev spec for the same reason.
 [workspace.dependencies]
-cu29 = { git = "https://github.com/copper-project/copper-rs", rev = "fe2061dc10539868334f6ded55a9e75feb0f2b62" }
+cu29 = { git = "https://github.com/copper-project/copper-rs", rev = "d46ef87a65c7ba93bcad3c236da99e52cd77f319" }
 # Without its `kornia` feature: that pulls kornia-image 0.1.10 from crates.io, a second `Image`
 # type next to the 0.2.0 one kornia-slam uses (semver-incompatible, so cargo cannot unify them).
 # The eye-to-`Image` conversion is ours instead.
-cu-sensor-payloads = { git = "https://github.com/copper-project/copper-rs", rev = "fe2061dc10539868334f6ded55a9e75feb0f2b62" }
-cu-spatial-payloads = { git = "https://github.com/copper-project/copper-rs", rev = "fe2061dc10539868334f6ded55a9e75feb0f2b62" }
-cu29-build = { git = "https://github.com/copper-project/copper-rs", rev = "fe2061dc10539868334f6ded55a9e75feb0f2b62" }
-cu29-export = { git = "https://github.com/copper-project/copper-rs", rev = "fe2061dc10539868334f6ded55a9e75feb0f2b62" }
+cu-sensor-payloads = { git = "https://github.com/copper-project/copper-rs", rev = "d46ef87a65c7ba93bcad3c236da99e52cd77f319" }
+cu-spatial-payloads = { git = "https://github.com/copper-project/copper-rs", rev = "d46ef87a65c7ba93bcad3c236da99e52cd77f319" }
+cu29-build = { git = "https://github.com/copper-project/copper-rs", rev = "d46ef87a65c7ba93bcad3c236da99e52cd77f319" }
+cu29-export = { git = "https://github.com/copper-project/copper-rs", rev = "d46ef87a65c7ba93bcad3c236da99e52cd77f319" }
 # The bincode derives emit `::bincode::` paths, so the crate is named `bincode` here; this is the
-# same package and version cu29 itself depends on, so the traits are cu29's traits.
-bincode = { package = "cu-bincode", version = "2.1", default-features = false, features = [
+# same package cu29 itself depends on, so the traits are cu29's traits. Since copper-rs d46ef87 that
+# package is IN-TREE (core/cu_bincode, 2.2): the crates.io cu-bincode is a different crate whose
+# derives satisfy nothing cu29 asks for (E0277 on every payload), so it comes from the same git rev.
+bincode = { package = "cu-bincode", git = "https://github.com/copper-project/copper-rs", rev = "d46ef87a65c7ba93bcad3c236da99e52cd77f319", default-features = false, features = [
   "derive",
   "alloc",
 ] }
