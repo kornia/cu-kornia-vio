@@ -3378,7 +3378,12 @@ impl Tracker {
             .state
             .lost_since_sec
             .map_or(0.0, |t0| timestamp_sec - t0);
-        let search_scale = self.estimator.config().search_scale_for(currently_lost_for);
+        // `false`: the wheel/gyro prior widens gradually, as before kornia-slam#153. Only an
+        // inertial prediction widens at once upstream; whether ours earns that is unmeasured.
+        let search_scale = self
+            .estimator
+            .config()
+            .search_scale_for(currently_lost_for, false);
 
         let t_est = std::time::Instant::now();
         let result = self.estimator.estimate_pose(
