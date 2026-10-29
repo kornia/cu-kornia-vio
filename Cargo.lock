@@ -1706,18 +1706,19 @@ dependencies = [
 [[package]]
 name = "kornia-sensors"
 version = "0.2.0"
-source = "git+https://github.com/kornia/kornia-slam?rev=539e4f1e2d0a19a5c85b8c945885cbdd222a2017#539e4f1e2d0a19a5c85b8c945885cbdd222a2017"
+source = "git+https://github.com/kornia/kornia-slam?rev=6251cf181228ce09acc747c76e3d6b98ee9d0658#6251cf181228ce09acc747c76e3d6b98ee9d0658"
 dependencies = [
  "glam 0.33.7",
  "kornia-3d",
  "kornia-algebra",
  "kornia-image",
+ "thiserror 1.0.69",
 ]
 
 [[package]]
 name = "kornia-slam"
 version = "0.2.0"
-source = "git+https://github.com/kornia/kornia-slam?rev=539e4f1e2d0a19a5c85b8c945885cbdd222a2017#539e4f1e2d0a19a5c85b8c945885cbdd222a2017"
+source = "git+https://github.com/kornia/kornia-slam?rev=6251cf181228ce09acc747c76e3d6b98ee9d0658#6251cf181228ce09acc747c76e3d6b98ee9d0658"
 dependencies = [
  "faer 0.22.6",
  "kornia-3d",
