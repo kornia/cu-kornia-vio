@@ -255,8 +255,9 @@ is used until the first `CameraMount` arrives.
 `wheel_odom.parked_keyframe_interval_s` withholds keyframes while the wheels and the camera are
 still, but forces one per interval, joined to the last by an IMU edge. Culling merges IMU edges
 only up to `keyframe_culling.max_merged_imu_span_s`, so a robot parked for long enough runs out of
-mergeable keyframes and the map is dropped at `max_keyframes` anyway (every ~20 min at 5 s / 11 s
-on the robot). `stationary_edges` removes both limits once the inertial path is settled:
+mergeable keyframes and the oldest are evicted at `max_keyframes` instead: first after ~20 min at
+5 s / 11 s on the robot, then every 10 parked keyframes (~110 s). `stationary_edges` removes both
+limits once the inertial path is settled:
 
 ```ron
 "stationary_edges": (
@@ -451,15 +452,18 @@ does not compile against this crate.
   neither `max_keyframes` nor `on_tracking_loss: "reset_map"` set the map grows until per-frame
   cost stalls the tracker. Set `max_keyframes` on any long-running graph; the map is then dropped
   and rebuilt when it reaches the bound. With `"keyframe_culling": (enabled: true)` the tracker
-  first removes redundant keyframes there (ORB-SLAM's rule, IMU and wheel edges merged) and drops
-  the map only if that cannot make room. Culling waits for a settled inertial path, and while
-  driving few keyframes are redundant: the room comes mostly from stops. With the inertial path
-  on, that needs `max_merged_imu_span_s` of at least twice the parked keyframe spacing
+  first removes redundant keyframes there (ORB-SLAM's rule, IMU and wheel edges merged), then
+  evicts the oldest ten under the bound, keeping the world and the pose. It still drops the map
+  while the inertial path is unsettled or a refinement pending, when keyframes a later lookup
+  needs (the tracking reference, the last keyframe, a queued wheel interval's) leave no room, and
+  at the landmark-slot cap below. Culling waits for a settled inertial path, and while driving few
+  keyframes are redundant: the room comes mostly from stops. With the inertial path on, that needs
+  `max_merged_imu_span_s` of at least twice the parked keyframe spacing
   (`parked_keyframe_interval_s` plus 0.25 s for the frame that lands past it), which startup
   checks; `stationary_edges` lifts that limit for a settled inertial path (see
   [Parked keyframes](#parked-keyframes)). Culling bounds keyframes, not landmark
   slots (kornia-slam never compacts those), so the map is still dropped once it holds
-  `max_keyframes * orb_keypoints` of them.
+  `max_keyframes * orb_keypoints` of them: eviction postpones that drop, it does not remove it.
 
 ## License
 

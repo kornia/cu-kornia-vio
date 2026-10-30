@@ -855,18 +855,20 @@ impl CuTask for StereoVio {
         );
         if let Some(t) = self.tracker.as_ref() {
             info!(
-                "vio map: {} maps dropped, {} keyframes culled",
+                "vio map: {} maps dropped, {} keyframes culled, {} evicted",
                 t.map_drops(),
-                t.culled_keyframes()
+                t.culled_keyframes(),
+                t.evicted_keyframes()
             );
         }
         if let Some(s) = self.tracker.as_ref().and_then(|t| t.stationary_stats()) {
             info!(
-                "vio parked: {} stationary edges ({} merged by culling, {} held), {} boundary \
-                 keyframes culled, {} tail edges, {} time-bound keyframes withheld; still runs \
-                 closed by the IMU checks {} / IMU holes {} / the wheels {}",
+                "vio parked: {} stationary edges ({} merged by culling, {} dropped by eviction, \
+                 {} held), {} boundary keyframes culled, {} tail edges, {} time-bound keyframes \
+                 withheld; still runs closed by the IMU checks {} / IMU holes {} / the wheels {}",
                 s.edges_added,
                 s.edges_merged,
+                s.edges_evicted,
                 s.factors,
                 s.boundaries_removed,
                 s.tail_edges,

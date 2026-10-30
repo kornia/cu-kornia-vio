@@ -219,6 +219,8 @@ pub struct StationaryStats {
     pub edges_added: u64,
     /// Stationary factors composed across a culled keyframe, lifetime.
     pub edges_merged: u64,
+    /// Stationary factors dropped with an evicted keyframe, lifetime.
+    pub edges_evicted: u64,
     /// Keyframes culled at a boundary between a stationary factor and an IMU edge (the factor
     /// dropped, the IMU edge moved onto the still neighbour), lifetime.
     pub boundaries_removed: u64,
