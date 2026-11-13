@@ -486,7 +486,7 @@ dependencies = [
 [[package]]
 name = "cu-bincode"
 version = "2.2.0"
-source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
+source = "git+https://github.com/copper-project/copper-rs?rev=93d7488013dc0d6fd232c51e859da3ad1f13a993#93d7488013dc0d6fd232c51e859da3ad1f13a993"
 dependencies = [
  "cu-bincode-derive",
  "cu29-value-types",
@@ -497,7 +497,7 @@ dependencies = [
 [[package]]
 name = "cu-bincode-derive"
 version = "2.2.0"
-source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
+source = "git+https://github.com/copper-project/copper-rs?rev=93d7488013dc0d6fd232c51e859da3ad1f13a993#93d7488013dc0d6fd232c51e859da3ad1f13a993"
 dependencies = [
  "virtue",
 ]
@@ -524,7 +524,7 @@ dependencies = [
 [[package]]
 name = "cu-sensor-payloads"
 version = "1.4.0-dev"
-source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
+source = "git+https://github.com/copper-project/copper-rs?rev=93d7488013dc0d6fd232c51e859da3ad1f13a993#93d7488013dc0d6fd232c51e859da3ad1f13a993"
 dependencies = [
  "cu-bincode",
  "cu29",
@@ -536,7 +536,7 @@ dependencies = [
 [[package]]
 name = "cu-spatial-payloads"
 version = "1.4.0-dev"
-source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
+source = "git+https://github.com/copper-project/copper-rs?rev=93d7488013dc0d6fd232c51e859da3ad1f13a993#93d7488013dc0d6fd232c51e859da3ad1f13a993"
 dependencies = [
  "cu-bincode",
  "cu29",
@@ -560,7 +560,7 @@ dependencies = [
 [[package]]
 name = "cu29"
 version = "1.4.0-dev"
-source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
+source = "git+https://github.com/copper-project/copper-rs?rev=93d7488013dc0d6fd232c51e859da3ad1f13a993#93d7488013dc0d6fd232c51e859da3ad1f13a993"
 dependencies = [
  "bevy_reflect_derive",
  "ctrlc",
@@ -586,12 +586,12 @@ dependencies = [
 [[package]]
 name = "cu29-build"
 version = "1.4.0-dev"
-source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
+source = "git+https://github.com/copper-project/copper-rs?rev=93d7488013dc0d6fd232c51e859da3ad1f13a993#93d7488013dc0d6fd232c51e859da3ad1f13a993"
 
 [[package]]
 name = "cu29-clock"
 version = "1.4.0-dev"
-source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
+source = "git+https://github.com/copper-project/copper-rs?rev=93d7488013dc0d6fd232c51e859da3ad1f13a993#93d7488013dc0d6fd232c51e859da3ad1f13a993"
 dependencies = [
  "bevy_reflect",
  "cortex-m",
@@ -604,7 +604,7 @@ dependencies = [
 [[package]]
 name = "cu29-derive"
 version = "1.4.0-dev"
-source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
+source = "git+https://github.com/copper-project/copper-rs?rev=93d7488013dc0d6fd232c51e859da3ad1f13a993#93d7488013dc0d6fd232c51e859da3ad1f13a993"
 dependencies = [
  "convert_case",
  "cu29-build",
@@ -621,7 +621,7 @@ dependencies = [
 [[package]]
 name = "cu29-export"
 version = "1.4.0-dev"
-source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
+source = "git+https://github.com/copper-project/copper-rs?rev=93d7488013dc0d6fd232c51e859da3ad1f13a993#93d7488013dc0d6fd232c51e859da3ad1f13a993"
 dependencies = [
  "clap",
  "cu-bincode",
@@ -637,7 +637,7 @@ dependencies = [
 [[package]]
 name = "cu29-intern-strs"
 version = "1.4.0-dev"
-source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
+source = "git+https://github.com/copper-project/copper-rs?rev=93d7488013dc0d6fd232c51e859da3ad1f13a993#93d7488013dc0d6fd232c51e859da3ad1f13a993"
 dependencies = [
  "anyhow",
  "cu-bincode",
@@ -647,7 +647,7 @@ dependencies = [
 [[package]]
 name = "cu29-log"
 version = "1.4.0-dev"
-source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
+source = "git+https://github.com/copper-project/copper-rs?rev=93d7488013dc0d6fd232c51e859da3ad1f13a993#93d7488013dc0d6fd232c51e859da3ad1f13a993"
 dependencies = [
  "cu-bincode",
  "cu29-clock",
@@ -661,7 +661,7 @@ dependencies = [
 [[package]]
 name = "cu29-log-derive"
 version = "1.4.0-dev"
-source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
+source = "git+https://github.com/copper-project/copper-rs?rev=93d7488013dc0d6fd232c51e859da3ad1f13a993#93d7488013dc0d6fd232c51e859da3ad1f13a993"
 dependencies = [
  "cu29-build",
  "cu29-intern-strs",
@@ -675,7 +675,7 @@ dependencies = [
 [[package]]
 name = "cu29-log-runtime"
 version = "1.4.0-dev"
-source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
+source = "git+https://github.com/copper-project/copper-rs?rev=93d7488013dc0d6fd232c51e859da3ad1f13a993#93d7488013dc0d6fd232c51e859da3ad1f13a993"
 dependencies = [
  "cu-bincode",
  "cu29-build",
@@ -691,7 +691,7 @@ dependencies = [
 [[package]]
 name = "cu29-reflect-derive"
 version = "1.4.0-dev"
-source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
+source = "git+https://github.com/copper-project/copper-rs?rev=93d7488013dc0d6fd232c51e859da3ad1f13a993#93d7488013dc0d6fd232c51e859da3ad1f13a993"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -701,7 +701,7 @@ dependencies = [
 [[package]]
 name = "cu29-runtime"
 version = "1.4.0-dev"
-source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
+source = "git+https://github.com/copper-project/copper-rs?rev=93d7488013dc0d6fd232c51e859da3ad1f13a993#93d7488013dc0d6fd232c51e859da3ad1f13a993"
 dependencies = [
  "arrayvec",
  "bevy_reflect",
@@ -741,7 +741,7 @@ dependencies = [
 [[package]]
 name = "cu29-soa-derive"
 version = "1.4.0-dev"
-source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
+source = "git+https://github.com/copper-project/copper-rs?rev=93d7488013dc0d6fd232c51e859da3ad1f13a993#93d7488013dc0d6fd232c51e859da3ad1f13a993"
 dependencies = [
  "quote",
  "syn 3.0.5",
@@ -750,7 +750,7 @@ dependencies = [
 [[package]]
 name = "cu29-traits"
 version = "1.4.0-dev"
-source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
+source = "git+https://github.com/copper-project/copper-rs?rev=93d7488013dc0d6fd232c51e859da3ad1f13a993#93d7488013dc0d6fd232c51e859da3ad1f13a993"
 dependencies = [
  "bevy_reflect",
  "compact_str",
@@ -764,7 +764,7 @@ dependencies = [
 [[package]]
 name = "cu29-unifiedlog"
 version = "1.4.0-dev"
-source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
+source = "git+https://github.com/copper-project/copper-rs?rev=93d7488013dc0d6fd232c51e859da3ad1f13a993#93d7488013dc0d6fd232c51e859da3ad1f13a993"
 dependencies = [
  "cu-bincode",
  "cu29-traits",
@@ -777,7 +777,7 @@ dependencies = [
 [[package]]
 name = "cu29-units"
 version = "1.4.0-dev"
-source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
+source = "git+https://github.com/copper-project/copper-rs?rev=93d7488013dc0d6fd232c51e859da3ad1f13a993#93d7488013dc0d6fd232c51e859da3ad1f13a993"
 dependencies = [
  "bevy_reflect",
  "cu-bincode",
@@ -790,7 +790,7 @@ dependencies = [
 [[package]]
 name = "cu29-value"
 version = "1.4.0-dev"
-source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
+source = "git+https://github.com/copper-project/copper-rs?rev=93d7488013dc0d6fd232c51e859da3ad1f13a993#93d7488013dc0d6fd232c51e859da3ad1f13a993"
 dependencies = [
  "cu-bincode",
  "cu29-clock",
@@ -803,7 +803,7 @@ dependencies = [
 [[package]]
 name = "cu29-value-types"
 version = "1.4.0-dev"
-source = "git+https://github.com/copper-project/copper-rs?rev=d46ef87a65c7ba93bcad3c236da99e52cd77f319#d46ef87a65c7ba93bcad3c236da99e52cd77f319"
+source = "git+https://github.com/copper-project/copper-rs?rev=93d7488013dc0d6fd232c51e859da3ad1f13a993#93d7488013dc0d6fd232c51e859da3ad1f13a993"
 dependencies = [
  "serde",
 ]
